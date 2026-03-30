@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="wrapper">
+
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="logo-text">FakeGuard</span>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="hero">
+                <h1 class="hero-title">
+                    Fake News<br>
+                    <span class="gradient-text">Detector</span>
+                </h1>
+                <p class="hero-desc">
+                    Paste any news article and let the model decide.<br>
+                    Trained on <strong>72,000+</strong> labeled news articles.
+                </p>
+            </div>
+
+            <div class="card">
+                <form method="post" id="mainForm">
+                    <div class="field">
+                        <label class="field-label">News text</label>
+                        <div class="textarea-wrap">
+                            <textarea
+                                name="news_text"
+                                id="newsText"
+                                placeholder="Paste or type a news article to check..."
+                                required
+                                oninput="updateCounter(this)"
+                            >{{ request.form.get('news_text', '') }}</textarea>
+                            <div class="textarea-footer">
+                                <span class="char-count" id="charCount">0 characters</span>
+                                <button type="button" class="clear-btn" onclick="clearText()" title="Clear">
+                                    <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span class="btn-text">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Check Article
+                        </span>
+                        <span class="btn-loader" style="display:none">
+                            <svg class="spin" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4" stroke-dashoffset="10"/>
+                            </svg>
+                            Analyzing...
+                        </span>
+                    </button>
+                </form>
+
+                {% if result %}
+                <div class="result-wrap animate-in">
+                    <div class="result-card {{ result|lower }}">
+                        <div class="result-icon">
+                            {% if result == "Fake" %}
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            {% else %}
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="result-info">
+                            <div class="result-label">Verdict</div>
+                            <div class="result-value">
+                                {% if result == "Fake" %}
+                                    Fake
+                                {% else %}
+                                    Real
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if confidence %}
+                        <div class="result-confidence">
+                            <div class="conf-value">{{ confidence }}%</div>
+                            <div class="conf-label">confidence</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if confidence %}
+                    <div class="confidence-bar-wrap">
+                        <div class="confidence-bar-label">
+                            <span>Model confidence</span>
+                            <span>{{ confidence }}%</span>
+                        </div>
+                        <div class="confidence-bar-track">
+                            <div class="confidence-bar-fill {{ result|lower }}" style="width: {{ confidence }}%"></div>
+                        </div>
+                        <div class="confidence-hint">
+                            {% if confidence >= 90 %}
+                                Very high confidence
+                            {% elif confidence >= 75 %}
+                                High confidence
+                            {% elif confidence >= 60 %}
+                                Moderate confidence
+                            {% else %}
+                                Low confidence — consider verifying manually
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-val">72K+</div>
+                    <div class="stat-lbl">articles in dataset</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-val">~98%</div>
+                    <div class="stat-lbl">model accuracy</div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            Fake News Detector &mdash; Built with Flask &amp; scikit-learn
+        </footer>
+
+    </div>
+
+    <script>
+        function updateCounter(el) {
+            document.getElementById('charCount').textContent = el.value.length + ' characters';
+        }
+
+        function clearText() {
+            const ta = document.getElementById('newsText');
+            ta.value = '';
+            updateCounter(ta);
+            ta.focus();
+        }
+
+        document.getElementById('mainForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            btn.querySelector('.btn-text').style.display = 'none';
+            btn.querySelector('.btn-loader').style.display = 'flex';
+            btn.disabled = true;
+        });
+
+        const ta = document.getElementById('newsText');
+        if (ta.value) updateCounter(ta);
+    </script>
+</body>
+</html>
